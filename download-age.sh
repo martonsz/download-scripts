@@ -1,22 +1,22 @@
-#!/bin/bash
+#!/bin/sh
 # Download age for your architecture
 # https://github.com/FiloSottile/age
 # 
-# curl -sfL https://raw.githubusercontent.com/martonsz/download-scripts/main/download-age.sh | bash -s -- -b /usr/local/bin
+# curl -sfL https://raw.githubusercontent.com/martonsz/download-scripts/main/download-age.sh | sh -s -- -b /usr/local/bin
 
 set -e
 
-AGE_BIN_FOLDER="/usr/local/bin"
-AGE_VERSION="${AGE_VERSION:-latest}"
+BIN_FOLDER="/usr/local/bin"
+VERSION="${VERSION:-latest}"
 
 usage() {
     echo "Usage: $0 [-b <bin_folder>] [-v <version>]"
-    echo "  -b <bin_folder>  Specify a custom folder to store the age binary (default: $AGE_BIN_FOLDER)"
-    echo "  -v <version>     Specify the version of age to download (default: $AGE_VERSION)"
+    echo "  -b <bin_folder>  Specify a custom folder to store the binary (default: $BIN_FOLDER)"
+    echo "  -v <version>     Specify the version to download (optional, will try to download the latest version)"
     exit 1
 }
 
-is_in_path() {
+isInPath() {
     case ":$PATH:" in
         *":$1:"*) return 0 ;;
         *) return 1 ;;
@@ -25,16 +25,22 @@ is_in_path() {
 
 while getopts "b:v:h" opt; do
     case ${opt} in
-        b) AGE_BIN_FOLDER=${OPTARG};;
-        v) AGE_VERSION=v${OPTARG};;
+        b) BIN_FOLDER=${OPTARG};;
+        v) VERSION=${OPTARG};;
         h) usage;;
         *) usage;;
     esac
 done
 
-if ! touch "$AGE_BIN_FOLDER/age" 2>/dev/null; then
-    echo "Cannot write to $AGE_BIN_FOLDER. Please specify a different folder with -b or run as root"
+if ! touch "$BIN_FOLDER/age" 2>/dev/null; then
+    rm "$BIN_FOLDER/age"
+else
+    echo "Cannot write to $BIN_FOLDER. Please specify a different folder with -b or run as root"
     exit 1
+fi
+if [ -z "$VERSION" ]; then
+    echo "Version not specified. Fetching latest version"
+    VERSION=$(getLatestVersion)
 fi
 
 # Determine system architecture
@@ -56,15 +62,15 @@ case $OS in
         exit 1;;
 esac
 
-URL="https://dl.filippo.io/age/${AGE_VERSION}?for=${OS}/${ARCH}"
+URL="https://dl.filippo.io/age/${VERSION}?for=${OS}/${ARCH}"
 
-echo "Downloading age from $URL"
-curl --silent --show-error --fail-with-body -L "$URL" --output - | tar -xz  -C "$AGE_BIN_FOLDER" --strip-components=1 age/age age/age-keygen
+echo "Downloading from $URL"
+curl --silent --show-error --fail-with-body -L "$URL" --output - | tar -xz  -C "$BIN_FOLDER" --strip-components=1 age/age age/age-keygen
 
-echo "age version $AGE_VERSION has been installed to $AGE_BIN_FOLDER"
+echo "age version $VERSION has been installed to $BIN_FOLDER"
 
-if ! is_in_path "$AGE_BIN_FOLDER"; then
+if ! isInPath "$BIN_FOLDER"; then
     echo ""
-    echo "WARNING: The specified binary folder $AGE_BIN_FOLDER is not in the PATH!"
+    echo "WARNING: The specified binary folder $BIN_FOLDER is not in the PATH!"
     echo ""
 fi
