@@ -32,7 +32,7 @@ while getopts "b:v:h" opt; do
     esac
 done
 
-if ! touch "$BIN_FOLDER/age" 2>/dev/null; then
+if touch "$BIN_FOLDER/age" 2>/dev/null; then
     rm "$BIN_FOLDER/age"
 else
     echo "Cannot write to $BIN_FOLDER. Please specify a different folder with -b or run as root"
